@@ -8,8 +8,11 @@ from ibapi.contract import Contract
 from ibapi.order import *
 import threading
 import time
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk  # Import from PIL
 
+# Initialize the configuration parser
+config = configparser.ConfigParser()
+config.read('defaults.ini')
 
 # IBKR API Class
 class IBapi(EWrapper, EClient):
@@ -23,14 +26,13 @@ class IBapi(EWrapper, EClient):
         print('The next valid order id is: ', self.nextorderId)
 
     def accountSummary(self, reqId: int, account: str, tag: str, value: str, currency: str):
-        print(f"<{reqId}> Account: {account}\n{tag} Value: {float(value):,} {currency}")
+        print(f"<{reqId}> Account: {account}\n{tag} Value: {float(value):,} Currency: {currency}")
         if tag == 'NetLiquidation':
             self.equity.delete(0, 'end')
             self.equity.insert(0, value)
 
-
     def accountSummaryEnd(self, reqId: int):
-        pass
+        print("AccountSummaryEnd. ReqId:", reqId)
 
     def BracketOrder(self, parentOrderId: int, action: str, quantity: float, stopPrice: float, takeProfitLimitPrice: float, stopLossPrice: float):
         parent = Order()
@@ -72,11 +74,9 @@ class IBapi(EWrapper, EClient):
 
         return bracketOrder
 
-
 # Function to run the API loop
 def run_loop():
     app.run()
-
 
 # Function to create bracket order
 def create_bracket_order(contract, order_id, shares, buy_stop, sell_limit_profit, stop_loss):
@@ -88,7 +88,6 @@ def create_bracket_order(contract, order_id, shares, buy_stop, sell_limit_profit
         app.placeOrder(o.orderId, contract, o)
     app.nextorderId += len(bracket)
     return bracket
-
 
 # Function to execute order
 def execute_order():
@@ -127,7 +126,6 @@ def execute_order():
         print(f"Input error: {e}")
     except Exception as e:
         print(f"Unexpected error: {e}")
-
 
 # Function to calculate
 def calculate():
@@ -181,34 +179,34 @@ def calculate():
     except Exception as e:
         print(f"Unexpected error: {e}")
 
-
 # Helper function to update labels
 def update_labels(core_stop_percentage, core_value_at_risk, core_r_equity, core_sell_limit_profit, core_shares,
                   pyr1_stop_percentage, pyr1_value_at_risk, pyr1_r_equity, pyr1_sell_limit_profit, pyr1_shares,
                   pyr2_stop_percentage, pyr2_value_at_risk, pyr2_r_equity, pyr2_sell_limit_profit, pyr2_shares):
     label_core_stop_percentage['text'] = f"{core_stop_percentage:.2f}%" if core_stop_percentage else "N/A"
-    label_core_value_at_risk['text'] = f"${core_value_at_risk:.2f}"
-    label_core_r_equity['text'] = f"${core_r_equity:.2f}"
-    label_core_sell_limit_profit['text'] = f"${core_sell_limit_profit:.2f}" if core_sell_limit_profit else "N/A"
-    label_core_shares['text'] = f"{core_shares:.0f}" if core_shares else "N/A"
+    label_core_value_at_risk['text'] = f"${format_number(core_value_at_risk)}"
+    label_core_r_equity['text'] = f"${format_number(core_r_equity)}"
+    label_core_sell_limit_profit['text'] = f"${format_number(core_sell_limit_profit)}" if core_sell_limit_profit else "N/A"
+    label_core_shares['text'] = f"{format_number(core_shares)}" if core_shares else "N/A"
 
     label_pyr1_stop_percentage['text'] = f"{pyr1_stop_percentage:.2f}%" if pyr1_stop_percentage else "N/A"
-    label_pyr1_value_at_risk['text'] = f"${pyr1_value_at_risk:.2f}"
-    label_pyr1_r_equity['text'] = f"${pyr1_r_equity:.2f}"
-    label_pyr1_sell_limit_profit['text'] = f"${pyr1_sell_limit_profit:.2f}" if pyr1_sell_limit_profit else "N/A"
-    label_pyr1_shares['text'] = f"{pyr1_shares:.0f}" if pyr1_shares else "N/A"
+    label_pyr1_value_at_risk['text'] = f"${format_number(pyr1_value_at_risk)}"
+    label_pyr1_r_equity['text'] = f"${format_number(pyr1_r_equity)}"
+    label_pyr1_sell_limit_profit['text'] = f"${format_number(pyr1_sell_limit_profit)}" if pyr1_sell_limit_profit else "N/A"
+    label_pyr1_shares['text'] = f"{format_number(pyr1_shares)}" if pyr1_shares else "N/A"
 
     label_pyr2_stop_percentage['text'] = f"{pyr2_stop_percentage:.2f}%" if pyr2_stop_percentage else "N/A"
-    label_pyr2_value_at_risk['text'] = f"${pyr2_value_at_risk:.2f}"
-    label_pyr2_r_equity['text'] = f"${pyr2_r_equity:.2f}"
-    label_pyr2_sell_limit_profit['text'] = f"${pyr2_sell_limit_profit:.2f}" if pyr2_sell_limit_profit else "N/A"
-    label_pyr2_shares['text'] = f"{pyr2_shares:.0f}" if pyr2_shares else "N/A"
+    label_pyr2_value_at_risk['text'] = f"${format_number(pyr2_value_at_risk)}"
+    label_pyr2_r_equity['text'] = f"${format_number(pyr2_r_equity)}"
+    label_pyr2_sell_limit_profit['text'] = f"${format_number(pyr2_sell_limit_profit)}" if pyr2_sell_limit_profit else "N/A"
+    label_pyr2_shares['text'] = f"{format_number(pyr2_shares)}" if pyr2_shares else "N/A"
 
-
-# Load the configuration file
-config = configparser.ConfigParser()
-config.read('defaults.ini')
-
+# Format number with thousands separator
+def format_number(value):
+    try:
+        return f"{float(value):,}"
+    except ValueError:
+        return value  # In case the value cannot be converted to float
 
 # Function to save the defaults
 def save_defaults():
@@ -221,6 +219,13 @@ def save_defaults():
     with open('defaults.ini', 'w') as configfile:
         config.write(configfile)
 
+# Load the configuration file and set defaults
+def load_defaults():
+    if 'DEFAULTS' in config:
+        entry_risk_per_full_pos.insert(0, config['DEFAULTS'].get('Risk per Full Pos %', ''))
+        entry_full_position_size.insert(0, config['DEFAULTS'].get('Full Position Size %', ''))
+        entry_buy_limit_thresh.insert(0, config['DEFAULTS'].get('Buy Limit Thresh %', ''))
+        entry_r_target.insert(0, config['DEFAULTS'].get('R Target', ''))
 
 # Create the main window
 root = tk.Tk()
@@ -233,11 +238,11 @@ logo_photo = ImageTk.PhotoImage(logo_image)
 # Create a label to display the image
 logo_label = ttk.Label(root, image=logo_photo)
 logo_label.image = logo_photo  # Keep a reference to avoid garbage collection
-logo_label.grid(row=0, column=2, padx=10, pady=10, sticky="ne")
+logo_label.grid(row=0, column=2, padx=10, pady=10, sticky="ne", rowspan=2)
 
 # Portfolio Frame
 frame_portfolio = ttk.LabelFrame(root, text="Portfolio")
-frame_portfolio.grid(row=0, column=0, padx=10, pady=10, sticky="ew", columnspan=1)
+frame_portfolio.grid(row=0, column=0, padx=10, pady=10, sticky="ew", columnspan=2)
 
 ttk.Label(frame_portfolio, text="Equity:").grid(row=0, column=0, sticky="e")
 entry_equity = ttk.Entry(frame_portfolio)
@@ -262,6 +267,9 @@ entry_r_target.grid(row=4, column=1)
 ttk.Label(frame_portfolio, text="Ticker:").grid(row=5, column=0, sticky="e")
 entry_ticker = ttk.Entry(frame_portfolio)
 entry_ticker.grid(row=5, column=1)
+
+# Load default values from configuration file
+load_defaults()
 
 # Core Position Frame
 frame_core_position = ttk.LabelFrame(root, text="Core Position")
