@@ -8,6 +8,8 @@ from ibapi.contract import Contract
 from ibapi.order import *
 import threading
 import time
+from PIL import Image, ImageTk
+
 
 # IBKR API Class
 class IBapi(EWrapper, EClient):
@@ -20,14 +22,15 @@ class IBapi(EWrapper, EClient):
         self.nextorderId = orderId
         print('The next valid order id is: ', self.nextorderId)
 
-    def accountSummary(self, reqId: int, account: str, tag: str, value: str,currency: str):
-        print("AccountSummary. ReqId:", reqId, "Account:", account,"Tag: ", tag, "Value:", value, "Currency:", currency)
+    def accountSummary(self, reqId: int, account: str, tag: str, value: str, currency: str):
+        print(f"<{reqId}> Account: {account}\n{tag} Value: {float(value):,} {currency}")
         if tag == 'NetLiquidation':
             self.equity.delete(0, 'end')
             self.equity.insert(0, value)
-    
+
+
     def accountSummaryEnd(self, reqId: int):
-        print("AccountSummaryEnd. ReqId:", reqId)
+        pass
 
     def BracketOrder(self, parentOrderId: int, action: str, quantity: float, stopPrice: float, takeProfitLimitPrice: float, stopLossPrice: float):
         parent = Order()
@@ -69,18 +72,35 @@ class IBapi(EWrapper, EClient):
 
         return bracketOrder
 
+
 # Function to run the API loop
 def run_loop():
     app.run()
 
+
+# Function to create bracket order
+def create_bracket_order(contract, order_id, shares, buy_stop, sell_limit_profit, stop_loss):
+    bracket = app.BracketOrder(order_id, "BUY", shares, buy_stop, sell_limit_profit, stop_loss)
+    for o in bracket:
+        o.eTradeOnly = False
+        o.firmQuoteOnly = False
+        o.tif = "GTC"  # Ensure order is GTC
+        app.placeOrder(o.orderId, contract, o)
+    app.nextorderId += len(bracket)
+    return bracket
+
+
 # Function to execute order
 def execute_order():
-    ticker = entry_ticker.get()
-    core_shares = int(label_core_shares['text']) if label_core_shares['text'] != 'N/A' else 0
-    pyr1_shares = int(label_pyr1_shares['text']) if label_pyr1_shares['text'] != 'N/A' else 0
-    pyr2_shares = int(label_pyr2_shares['text']) if label_pyr2_shares['text'] != 'N/A' else 0
+    try:
+        ticker = entry_ticker.get()
+        if not ticker:
+            raise ValueError("Ticker cannot be empty")
 
-    if ticker and core_shares > 0:
+        core_shares = int(label_core_shares['text']) if label_core_shares['text'] != 'N/A' else 0
+        pyr1_shares = int(label_pyr1_shares['text']) if label_pyr1_shares['text'] != 'N/A' else 0
+        pyr2_shares = int(label_pyr2_shares['text']) if label_pyr2_shares['text'] != 'N/A' else 0
+
         contract = Contract()
         contract.symbol = ticker
         contract.secType = "STK"
@@ -88,117 +108,109 @@ def execute_order():
         contract.exchange = "SMART"
         contract.primaryExchange = "ISLAND"
 
-        order_id = app.nextorderId
-        core_sell_limit_profit = float(label_core_sell_limit_profit['text'].replace('$', ''))
-        bracket = app.BracketOrder(order_id, "BUY", core_shares, float(entry_core_buy_stop.get()), 
-                                   core_sell_limit_profit, float(entry_core_stop_loss.get()))
-
-        for o in bracket:
-            o.eTradeOnly = False
-            o.firmQuoteOnly = False
-            o.tif = "GTC"  # Ensure order is GTC
-            app.placeOrder(o.orderId, contract, o)
-
-        app.nextorderId += len(bracket)
+        if core_shares > 0:
+            order_id = app.nextorderId
+            create_bracket_order(contract, order_id, core_shares, float(entry_core_buy_stop.get()),
+                                 float(label_core_sell_limit_profit['text'].replace('$', '')), float(entry_core_stop_loss.get()))
 
         if pyr1_shares > 0:
             order_id = app.nextorderId
-            pyr1_sell_limit_profit = float(label_pyr1_sell_limit_profit['text'].replace('$', ''))
-            bracket = app.BracketOrder(order_id, "BUY", pyr1_shares, float(entry_pyr1_buy_stop.get()), 
-                                       pyr1_sell_limit_profit, float(entry_pyr1_stop_loss.get()))
-
-            for o in bracket:
-                o.eTradeOnly = False
-                o.firmQuoteOnly = False
-                o.tif = "GTC"  # Ensure order is GTC
-                app.placeOrder(o.orderId, contract, o)
-
-            app.nextorderId += len(bracket)
+            create_bracket_order(contract, order_id, pyr1_shares, float(entry_pyr1_buy_stop.get()),
+                                 float(label_pyr1_sell_limit_profit['text'].replace('$', '')), float(entry_pyr1_stop_loss.get()))
 
         if pyr2_shares > 0:
             order_id = app.nextorderId
-            pyr2_sell_limit_profit = float(label_pyr2_sell_limit_profit['text'].replace('$', ''))
-            bracket = app.BracketOrder(order_id, "BUY", pyr2_shares, float(entry_pyr2_buy_stop.get()), 
-                                       pyr2_sell_limit_profit, float(entry_pyr2_stop_loss.get()))
+            create_bracket_order(contract, order_id, pyr2_shares, float(entry_pyr2_buy_stop.get()),
+                                 float(label_pyr2_sell_limit_profit['text'].replace('$', '')), float(entry_pyr2_stop_loss.get()))
 
-            for o in bracket:
-                o.eTradeOnly = False
-                o.firmQuoteOnly = False
-                o.tif = "GTC"  # Ensure order is GTC
-                app.placeOrder(o.orderId, contract, o)
+    except ValueError as e:
+        print(f"Input error: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
 
-            app.nextorderId += len(bracket)
 
 # Function to calculate
 def calculate():
-    equity = float(entry_equity.get() or 0)
-    risk_per_full_pos = float(entry_risk_per_full_pos.get() or 0) / 100
-    full_position_size = float(entry_full_position_size.get() or 0) / 100
-    buy_limit_thresh = float(entry_buy_limit_thresh.get() or 0) / 100
-    r_target = float(entry_r_target.get() or 0)
+    try:
+        equity = float(entry_equity.get() or 0)
+        risk_per_full_pos = float(entry_risk_per_full_pos.get() or 0) / 100
+        full_position_size = float(entry_full_position_size.get() or 0) / 100
+        r_target = float(entry_r_target.get() or 0)
 
-    pos_size_dict = {
-        "Full": full_position_size,
-        "Half": full_position_size / 2,
-        "Quarter": full_position_size / 4,
-        "None": 0
-    }
-    
-    core_pos_size = pos_size_dict[combobox_core_pos_size.get()]
-    pyr1_pos_size = pos_size_dict[combobox_pyr1_pos_size.get()]
-    pyr2_pos_size = pos_size_dict[combobox_pyr2_pos_size.get()]
-    
-    core_buy_stop = float(entry_core_buy_stop.get() or 0)
-    core_stop_loss = float(entry_core_stop_loss.get() or 0)
-    core_stop_percentage = (core_buy_stop - core_stop_loss) / core_buy_stop * 100 if core_buy_stop else 0
-    core_r_equity = equity * risk_per_full_pos * core_pos_size / full_position_size if full_position_size else 0
-    core_sell_limit_profit = core_buy_stop * (1 + core_stop_percentage / 100 * r_target) if core_buy_stop else 0
-    core_shares = ceil((equity * core_pos_size) / core_buy_stop / 2) * 2 if core_buy_stop else 0
-    core_value_at_risk = core_shares * (core_buy_stop - core_stop_loss)
-    
-    pyr1_buy_stop = float(entry_pyr1_buy_stop.get() or 0)
-    pyr1_stop_loss = float(entry_pyr1_stop_loss.get() or 0)
-    pyr1_stop_percentage = (pyr1_buy_stop - pyr1_stop_loss) / pyr1_buy_stop * 100 if pyr1_buy_stop else 0
-    pyr1_r_equity = equity * risk_per_full_pos * pyr1_pos_size / full_position_size if full_position_size else 0
-    pyr1_sell_limit_profit = pyr1_buy_stop * (1 + pyr1_stop_percentage / 100 * r_target) if pyr1_buy_stop else 0
-    pyr1_shares = core_shares * (pyr1_pos_size / core_pos_size) if core_pos_size else 0
-    pyr1_value_at_risk = pyr1_shares * (pyr1_buy_stop - pyr1_stop_loss)
-    
-    pyr2_buy_stop = float(entry_pyr2_buy_stop.get() or 0)
-    pyr2_stop_loss = float(entry_pyr2_stop_loss.get() or 0)
-    pyr2_stop_percentage = (pyr2_buy_stop - pyr2_stop_loss) / pyr2_buy_stop * 100 if pyr2_buy_stop else 0
-    pyr2_r_equity = equity * risk_per_full_pos * pyr2_pos_size / full_position_size if full_position_size else 0
-    pyr2_sell_limit_profit = pyr2_buy_stop * (1 + pyr2_stop_percentage / 100 * r_target) if pyr2_buy_stop else 0
-    pyr2_shares = core_shares * (pyr2_pos_size / core_pos_size) if core_pos_size else 0
-    pyr2_value_at_risk = pyr2_shares * (pyr2_buy_stop - pyr2_stop_loss)
+        pos_size_dict = {
+            "Full": full_position_size,
+            "Half": full_position_size / 2,
+            "Quarter": full_position_size / 4,
+            "None": 0
+        }
 
-    label_core_stop_percentage['text'] = f"{core_stop_percentage:.2f}%" if core_buy_stop else "N/A"
+        core_pos_size = pos_size_dict[combobox_core_pos_size.get()]
+        pyr1_pos_size = pos_size_dict[combobox_pyr1_pos_size.get()]
+        pyr2_pos_size = pos_size_dict[combobox_pyr2_pos_size.get()]
+
+        core_buy_stop = float(entry_core_buy_stop.get() or 0)
+        core_stop_loss = float(entry_core_stop_loss.get() or 0)
+        core_stop_percentage = (core_buy_stop - core_stop_loss) / core_buy_stop * 100 if core_buy_stop else 0
+        core_r_equity = equity * risk_per_full_pos * core_pos_size / full_position_size if full_position_size else 0
+        core_sell_limit_profit = core_buy_stop * (1 + core_stop_percentage / 100 * r_target) if core_buy_stop else 0
+        core_shares = ceil((equity * core_pos_size) / core_buy_stop / 2) * 2 if core_buy_stop else 0
+        core_value_at_risk = core_shares * (core_buy_stop - core_stop_loss)
+
+        pyr1_buy_stop = float(entry_pyr1_buy_stop.get() or 0)
+        pyr1_stop_loss = float(entry_pyr1_stop_loss.get() or 0)
+        pyr1_stop_percentage = (pyr1_buy_stop - pyr1_stop_loss) / pyr1_buy_stop * 100 if pyr1_buy_stop else 0
+        pyr1_r_equity = equity * risk_per_full_pos * pyr1_pos_size / full_position_size if full_position_size else 0
+        pyr1_sell_limit_profit = pyr1_buy_stop * (1 + pyr1_stop_percentage / 100 * r_target) if pyr1_buy_stop else 0
+        pyr1_shares = core_shares * (pyr1_pos_size / core_pos_size) if core_pos_size else 0
+        pyr1_value_at_risk = pyr1_shares * (pyr1_buy_stop - pyr1_stop_loss)
+
+        pyr2_buy_stop = float(entry_pyr2_buy_stop.get() or 0)
+        pyr2_stop_loss = float(entry_pyr2_stop_loss.get() or 0)
+        pyr2_stop_percentage = (pyr2_buy_stop - pyr2_stop_loss) / pyr2_buy_stop * 100 if pyr2_buy_stop else 0
+        pyr2_r_equity = equity * risk_per_full_pos * pyr2_pos_size / full_position_size if full_position_size else 0
+        pyr2_sell_limit_profit = pyr2_buy_stop * (1 + pyr2_stop_percentage / 100 * r_target) if pyr2_buy_stop else 0
+        pyr2_shares = core_shares * (pyr2_pos_size / core_pos_size) if core_pos_size else 0
+        pyr2_value_at_risk = pyr2_shares * (pyr2_buy_stop - pyr2_stop_loss)
+
+        update_labels(core_stop_percentage, core_value_at_risk, core_r_equity, core_sell_limit_profit, core_shares,
+                      pyr1_stop_percentage, pyr1_value_at_risk, pyr1_r_equity, pyr1_sell_limit_profit, pyr1_shares,
+                      pyr2_stop_percentage, pyr2_value_at_risk, pyr2_r_equity, pyr2_sell_limit_profit, pyr2_shares)
+
+    except ValueError as e:
+        print(f"Input error: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+
+
+# Helper function to update labels
+def update_labels(core_stop_percentage, core_value_at_risk, core_r_equity, core_sell_limit_profit, core_shares,
+                  pyr1_stop_percentage, pyr1_value_at_risk, pyr1_r_equity, pyr1_sell_limit_profit, pyr1_shares,
+                  pyr2_stop_percentage, pyr2_value_at_risk, pyr2_r_equity, pyr2_sell_limit_profit, pyr2_shares):
+    label_core_stop_percentage['text'] = f"{core_stop_percentage:.2f}%" if core_stop_percentage else "N/A"
     label_core_value_at_risk['text'] = f"${core_value_at_risk:.2f}"
     label_core_r_equity['text'] = f"${core_r_equity:.2f}"
-    label_core_sell_limit_profit['text'] = f"${core_sell_limit_profit:.2f}" if core_buy_stop else "N/A"
+    label_core_sell_limit_profit['text'] = f"${core_sell_limit_profit:.2f}" if core_sell_limit_profit else "N/A"
     label_core_shares['text'] = f"{core_shares:.0f}" if core_shares else "N/A"
-    
-    label_pyr1_stop_percentage['text'] = f"{pyr1_stop_percentage:.2f}%" if pyr1_buy_stop else "N/A"
+
+    label_pyr1_stop_percentage['text'] = f"{pyr1_stop_percentage:.2f}%" if pyr1_stop_percentage else "N/A"
     label_pyr1_value_at_risk['text'] = f"${pyr1_value_at_risk:.2f}"
     label_pyr1_r_equity['text'] = f"${pyr1_r_equity:.2f}"
-    label_pyr1_sell_limit_profit['text'] = f"${pyr1_sell_limit_profit:.2f}" if pyr1_buy_stop else "N/A"
+    label_pyr1_sell_limit_profit['text'] = f"${pyr1_sell_limit_profit:.2f}" if pyr1_sell_limit_profit else "N/A"
     label_pyr1_shares['text'] = f"{pyr1_shares:.0f}" if pyr1_shares else "N/A"
-        
-    label_pyr2_stop_percentage['text'] = f"{pyr2_stop_percentage:.2f}%" if pyr2_buy_stop else "N/A"
+
+    label_pyr2_stop_percentage['text'] = f"{pyr2_stop_percentage:.2f}%" if pyr2_stop_percentage else "N/A"
     label_pyr2_value_at_risk['text'] = f"${pyr2_value_at_risk:.2f}"
     label_pyr2_r_equity['text'] = f"${pyr2_r_equity:.2f}"
-    label_pyr2_sell_limit_profit['text'] = f"${pyr2_sell_limit_profit:.2f}" if pyr2_buy_stop else "N/A"
+    label_pyr2_sell_limit_profit['text'] = f"${pyr2_sell_limit_profit:.2f}" if pyr2_sell_limit_profit else "N/A"
     label_pyr2_shares['text'] = f"{pyr2_shares:.0f}" if pyr2_shares else "N/A"
+
 
 # Load the configuration file
 config = configparser.ConfigParser()
 config.read('defaults.ini')
 
-# Create the main window
-root = tk.Tk()
-root.title("IBKR Pyramid Bracket Order Tool (IPBot)")
 
-# Create a function to save the defaults
+# Function to save the defaults
 def save_defaults():
     config['DEFAULTS'] = {
         'Risk per Full Pos %': entry_risk_per_full_pos.get(),
@@ -209,9 +221,23 @@ def save_defaults():
     with open('defaults.ini', 'w') as configfile:
         config.write(configfile)
 
+
+# Create the main window
+root = tk.Tk()
+root.title("IBKR Pyramid Bracket Order Tool (IPBot)")
+
+# Load the logo image
+logo_image = Image.open("logo.png")  # Replace with the actual path to your logo image
+logo_photo = ImageTk.PhotoImage(logo_image)
+
+# Create a label to display the image
+logo_label = ttk.Label(root, image=logo_photo)
+logo_label.image = logo_photo  # Keep a reference to avoid garbage collection
+logo_label.grid(row=0, column=2, padx=10, pady=10, sticky="ne")
+
 # Portfolio Frame
 frame_portfolio = ttk.LabelFrame(root, text="Portfolio")
-frame_portfolio.grid(row=0, column=0, padx=10, pady=10, sticky="ew", columnspan=4)
+frame_portfolio.grid(row=0, column=0, padx=10, pady=10, sticky="ew", columnspan=1)
 
 ttk.Label(frame_portfolio, text="Equity:").grid(row=0, column=0, sticky="e")
 entry_equity = ttk.Entry(frame_portfolio)
@@ -356,15 +382,9 @@ button_calculate.grid(row=2, column=0, columnspan=3, padx=10, pady=10)
 button_execute = ttk.Button(root, text="Execute Order", command=execute_order)
 button_execute.grid(row=2, column=1, columnspan=3, padx=10, pady=10)
 
-# Create a button to save the defaults
-button_execute = ttk.Button(root, text="Save Defaults", command=save_defaults)
-button_execute.grid(row=2, column=2, columnspan=3, padx=10, pady=10)
-
-# Create the labels and entries
-for i, (text, default) in enumerate(config['DEFAULTS'].items(), start=1):
-    entry = ttk.Entry(frame_portfolio)
-    entry.insert(0, default)
-    entry.grid(row=i, column=1)
+# Save Defaults Button
+button_save_defaults = ttk.Button(root, text="Save Defaults", command=save_defaults)
+button_save_defaults.grid(row=2, column=2, columnspan=3, padx=10, pady=10)
 
 # Start the API connection
 app = IBapi(entry_equity)
@@ -380,4 +400,3 @@ api_thread.start()
 
 # Start the GUI event loop
 root.mainloop()
-
