@@ -14,6 +14,11 @@ from PIL import Image, ImageTk  # Import from PIL
 config = configparser.ConfigParser()
 config.read('defaults.ini')
 
+# Read connection details
+host = config.get('CONNECTION', 'host')
+port = config.getint('CONNECTION', 'port')
+clientId = config.getint('CONNECTION', 'clientId')
+
 class IBapi(EWrapper, EClient):
     def __init__(self, equity):
         EClient.__init__(self, self)
@@ -253,7 +258,7 @@ logo_label.grid(row=0, column=2, padx=10, pady=10, sticky="ne", rowspan=2)
 
 # Portfolio Frame
 frame_portfolio = ttk.LabelFrame(root, text="Portfolio")
-frame_portfolio.grid(row=0, column=0, padx=10, pady=10, sticky="ew", columnspan=2)
+frame_portfolio.grid(row=0, column=0, padx=10, pady=10, sticky="ew", columnspan=1)
 
 ttk.Label(frame_portfolio, text="Equity:").grid(row=0, column=0, sticky="e")
 entry_equity = ttk.Entry(frame_portfolio)
@@ -407,7 +412,7 @@ button_save_defaults.grid(row=2, column=2, columnspan=3, padx=10, pady=10)
 
 # Start the API connection
 app = IBapi(entry_equity)
-app.connect('127.0.0.1', 7496, 123)
+app.connect(host, port, clientId)
 
 time.sleep(1)  # Sleep interval to allow time for connection to server
 
