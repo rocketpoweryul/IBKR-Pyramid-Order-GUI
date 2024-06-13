@@ -1,3 +1,4 @@
+import configparser
 import tkinter as tk
 from tkinter import ttk
 from math import ceil
@@ -189,9 +190,24 @@ def calculate():
     label_pyr2_sell_limit_profit['text'] = f"${pyr2_sell_limit_profit:.2f}" if pyr2_buy_stop else "N/A"
     label_pyr2_shares['text'] = f"{pyr2_shares:.0f}" if pyr2_shares else "N/A"
 
+# Load the configuration file
+config = configparser.ConfigParser()
+config.read('defaults.ini')
+
 # Create the main window
 root = tk.Tk()
-root.title("Investment Calculator")
+root.title("IBKR Pyramid Bracket Order Tool (IPBot)")
+
+# Create a function to save the defaults
+def save_defaults():
+    config['DEFAULTS'] = {
+        'Risk per Full Pos %': entry_risk_per_full_pos.get(),
+        'Full Position Size %': entry_full_position_size.get(),
+        'Buy Limit Thresh %': entry_buy_limit_thresh.get(),
+        'R Target': entry_r_target.get()
+    }
+    with open('defaults.ini', 'w') as configfile:
+        config.write(configfile)
 
 # Portfolio Frame
 frame_portfolio = ttk.LabelFrame(root, text="Portfolio")
@@ -339,6 +355,16 @@ button_calculate.grid(row=2, column=0, columnspan=3, padx=10, pady=10)
 # Execute Order Button
 button_execute = ttk.Button(root, text="Execute Order", command=execute_order)
 button_execute.grid(row=2, column=1, columnspan=3, padx=10, pady=10)
+
+# Create a button to save the defaults
+button_execute = ttk.Button(root, text="Save Defaults", command=save_defaults)
+button_execute.grid(row=2, column=2, columnspan=3, padx=10, pady=10)
+
+# Create the labels and entries
+for i, (text, default) in enumerate(config['DEFAULTS'].items(), start=1):
+    entry = ttk.Entry(frame_portfolio)
+    entry.insert(0, default)
+    entry.grid(row=i, column=1)
 
 # Start the API connection
 app = IBapi(entry_equity)
