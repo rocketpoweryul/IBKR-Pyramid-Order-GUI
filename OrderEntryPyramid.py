@@ -10,13 +10,23 @@ import time
 
 # IBKR API Class
 class IBapi(EWrapper, EClient):
-    def __init__(self):
+    def __init__(self, equity):
         EClient.__init__(self, self)
+        self.equity = equity
 
     def nextValidId(self, orderId: int):
         super().nextValidId(orderId)
         self.nextorderId = orderId
         print('The next valid order id is: ', self.nextorderId)
+
+    def accountSummary(self, reqId: int, account: str, tag: str, value: str,currency: str):
+        print("AccountSummary. ReqId:", reqId, "Account:", account,"Tag: ", tag, "Value:", value, "Currency:", currency)
+        if tag == 'NetLiquidation':
+            self.equity.delete(0, 'end')
+            self.equity.insert(0, value)
+    
+    def accountSummaryEnd(self, reqId: int):
+        print("AccountSummaryEnd. ReqId:", reqId)
 
     def BracketOrder(self, parentOrderId: int, action: str, quantity: float, stopPrice: float, takeProfitLimitPrice: float, stopLossPrice: float):
         parent = Order()
@@ -331,14 +341,16 @@ button_execute = ttk.Button(root, text="Execute Order", command=execute_order)
 button_execute.grid(row=2, column=1, columnspan=3, padx=10, pady=10)
 
 # Start the API connection
-app = IBapi()
+app = IBapi(entry_equity)
 app.connect('127.0.0.1', 7496, 123)
+
+time.sleep(1)  # Sleep interval to allow time for connection to server
+
+app.reqAccountSummary(9001, "All", 'NetLiquidation')
 
 # Start the socket in a thread
 api_thread = threading.Thread(target=run_loop, daemon=True)
 api_thread.start()
-
-time.sleep(1)  # Sleep interval to allow time for connection to server
 
 # Start the GUI event loop
 root.mainloop()
