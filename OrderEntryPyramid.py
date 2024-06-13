@@ -14,11 +14,11 @@ from PIL import Image, ImageTk  # Import from PIL
 config = configparser.ConfigParser()
 config.read('defaults.ini')
 
-# IBKR API Class
 class IBapi(EWrapper, EClient):
     def __init__(self, equity):
         EClient.__init__(self, self)
         self.equity = equity
+        self.nextorderId = None  # Initialize nextorderId
 
     def nextValidId(self, orderId: int):
         super().nextValidId(orderId)
@@ -73,6 +73,11 @@ class IBapi(EWrapper, EClient):
             bracketOrder = [parent, stopLoss]
 
         return bracketOrder
+
+    def disconnect_IBAPI(self):
+        print("Disconnecting from IB API")
+        self.done = True
+        self.disconnect()
 
 # Function to run the API loop
 def run_loop():
@@ -230,6 +235,12 @@ def load_defaults():
 # Create the main window
 root = tk.Tk()
 root.title("IBKR Pyramid Bracket Order Tool (IPBot)")
+
+def on_closing():
+    app.disconnect_IBAPI()
+    root.destroy()
+
+root.protocol("WM_DELETE_WINDOW", on_closing)
 
 # Load the logo image
 logo_image = Image.open("logo.png")  # Replace with the actual path to your logo image
