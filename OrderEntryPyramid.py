@@ -32,7 +32,7 @@ class IBapi(EWrapper, EClient):
     def nextValidId(self, orderId: int):
         super().nextValidId(orderId)
         self.nextorderId = orderId
-        self.log(f'The next valid order id is: {self.nextorderId}')
+        self.log(f'The next valid order ID is: {self.nextorderId}')
 
     def accountSummary(self, reqId: int, account: str, tag: str, value: str, currency: str):
         self.log(f"<{reqId}> Account: {account}\n{tag} Value: {float(value):,} Currency: {currency}")
@@ -41,7 +41,7 @@ class IBapi(EWrapper, EClient):
             self.equity.insert(0, value)
 
     def accountSummaryEnd(self, reqId: int):
-        self.log(f"AccountSummaryEnd. ReqId: {reqId}")
+        self.log(f"<{reqId}> Account Summary End")
 
     def BracketOrder(self, parentOrderId: int, action: str, quantity: float, stopPrice: float, takeProfitLimitPrice: float, stopLossPrice: float):
         parent = Order()
@@ -248,7 +248,7 @@ def load_defaults():
 
 # Create the main window
 root = tk.Tk()
-root.title("IBKR Pyramid Bracket Order Tool (IPBot)")
+root.title("IBKR Pyramid Order Tool")
 root.configure(bg='#2b2b2b')  # Dark background
 
 # Set the icon for the taskbar
