@@ -281,7 +281,7 @@ style.configure("TCombobox", background='#3c3c3c', foreground='#386227', font=('
 # Create a label to display the image
 logo_label = ttk.Label(root, image=logo_photo, background='#2b2b2b')
 logo_label.image = logo_photo  # Keep a reference to avoid garbage collection
-logo_label.grid(row=0, column=2, padx=10, pady=10, sticky="ne", rowspan=2)
+logo_label.grid(row=0, column=2, padx=10, pady=10, sticky="ns", rowspan=1)
 
 # Configure the columns to have equal weight
 root.grid_columnconfigure(0, weight=1)
@@ -439,9 +439,15 @@ label_pyr2_shares.grid(row=7, column=1, sticky="w", padx=5, pady=2)
 frame_log = ttk.LabelFrame(root, text="Status", style="Custom.TLabelframe")
 frame_log.grid(row=0, column=1, padx=1, pady=10, sticky="nsew", columnspan=1)
 
-log_text = tk.Text(frame_log, wrap='word', height=10, bg='#2b2b2b', fg='white', font=('Aptos', 10), width = 1)
+log_text = tk.Text(frame_log, wrap='word', height=5, bg='#2b2b2b', fg='white', font=('Aptos', 10), width=1)
 log_text.grid(row=0, column=0, padx=5, pady=5, sticky="nsew", columnspan=1)
 frame_log.grid_rowconfigure(0, weight=1)
+frame_log.grid_columnconfigure(0, weight=1)
+
+# Connect Data Text
+connect_data = tk.Text(frame_log, wrap='word', height=1, bg='#2b2b2b', fg='white', font=('Aptos', 10), width=1)
+connect_data.grid(row=1, column=0, padx=5, pady=5, sticky="ew", columnspan=1)
+frame_log.grid_rowconfigure(1, weight=0)
 frame_log.grid_columnconfigure(0, weight=1)
 
 # Calculate Button
@@ -462,11 +468,14 @@ app.connect(host, port, clientId)
 
 time.sleep(1)  # Sleep interval to allow time for connection to server
 
-app.reqAccountSummary(9001, "All", 'NetLiquidation')
+app.reqAccountSummary(1337, "All", 'NetLiquidation')
 
 # Start the socket in a thread
 api_thread = threading.Thread(target=run_loop, daemon=True)
 api_thread.start()
+
+connect_data.delete(1.0, tk.END)
+connect_data.insert(tk.END, f"Host: {host}, Port: {port}, clientID: {clientId}")
 
 # Start the GUI event loop
 root.mainloop()
