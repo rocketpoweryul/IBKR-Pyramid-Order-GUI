@@ -10,6 +10,8 @@ from ibapi.order import *
 import threading
 import time
 from PIL import Image, ImageTk  # Import from PIL
+import sys
+import io
 
 # Initialize the configuration parser
 config = configparser.ConfigParser()
@@ -21,24 +23,25 @@ port = config.getint('CONNECTION', 'port')
 clientId = config.getint('CONNECTION', 'clientId')
 
 class IBapi(EWrapper, EClient):
-    def __init__(self, equity):
+    def __init__(self, equity, log_widget):
         EClient.__init__(self, self)
         self.equity = equity
+        self.log_widget = log_widget
         self.nextorderId = None  # Initialize nextorderId
 
     def nextValidId(self, orderId: int):
         super().nextValidId(orderId)
         self.nextorderId = orderId
-        print('The next valid order id is: ', self.nextorderId)
+        self.log(f'The next valid order id is: {self.nextorderId}')
 
     def accountSummary(self, reqId: int, account: str, tag: str, value: str, currency: str):
-        print(f"<{reqId}> Account: {account}\n{tag} Value: {float(value):,} Currency: {currency}")
+        self.log(f"<{reqId}> Account: {account}\n{tag} Value: {float(value):,} Currency: {currency}")
         if tag == 'NetLiquidation':
             self.equity.delete(0, 'end')
             self.equity.insert(0, value)
 
     def accountSummaryEnd(self, reqId: int):
-        print("AccountSummaryEnd. ReqId:", reqId)
+        self.log(f"AccountSummaryEnd. ReqId: {reqId}")
 
     def BracketOrder(self, parentOrderId: int, action: str, quantity: float, stopPrice: float, takeProfitLimitPrice: float, stopLossPrice: float):
         parent = Order()
@@ -82,9 +85,13 @@ class IBapi(EWrapper, EClient):
         return bracketOrder
 
     def disconnect_IBAPI(self):
-        print("Disconnecting from IB API")
+        self.log("Disconnecting from IB API")
         self.done = True
         self.disconnect()
+
+    def log(self, message):
+        self.log_widget.insert(tk.END, message + "\n")
+        self.log_widget.see(tk.END)
 
 # Function to run the API loop
 def run_loop():
@@ -135,9 +142,9 @@ def execute_order():
                                  float(label_pyr2_sell_limit_profit['text'].replace('$', '')), float(entry_pyr2_stop_loss.get()))
 
     except ValueError as e:
-        print(f"Input error: {e}")
+        app.log(f"Input error: {e}")
     except Exception as e:
-        print(f"Unexpected error: {e}")
+        app.log(f"Unexpected error: {e}")
 
 # Function to calculate
 def calculate():
@@ -187,9 +194,9 @@ def calculate():
                       pyr2_stop_percentage, pyr2_value_at_risk, pyr2_r_equity, pyr2_sell_limit_profit, pyr2_shares)
 
     except ValueError as e:
-        print(f"Input error: {e}")
+        app.log(f"Input error: {e}")
     except Exception as e:
-        print(f"Unexpected error: {e}")
+        app.log(f"Unexpected error: {e}")
 
 # Helper function to update labels
 def update_labels(core_stop_percentage, core_value_at_risk, core_r_equity, core_sell_limit_profit, core_shares,
@@ -276,9 +283,19 @@ logo_label = ttk.Label(root, image=logo_photo, background='#2b2b2b')
 logo_label.image = logo_photo  # Keep a reference to avoid garbage collection
 logo_label.grid(row=0, column=2, padx=10, pady=10, sticky="ne", rowspan=2)
 
+# Configure the columns to have equal weight
+root.grid_columnconfigure(0, weight=1)
+root.grid_columnconfigure(1, weight=1)
+root.grid_columnconfigure(2, weight=1)
+
+# Configure the rows to have equal weight (optional, if needed)
+root.grid_rowconfigure(0, weight=1)
+root.grid_rowconfigure(1, weight=1)
+root.grid_rowconfigure(2, weight=1)
+
 # Portfolio Frame
 frame_portfolio = ttk.LabelFrame(root, text="Portfolio", style="Custom.TLabelframe")
-frame_portfolio.grid(row=0, column=0, padx=10, pady=10, sticky="ew", columnspan=1)
+frame_portfolio.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
 
 ttk.Label(frame_portfolio, text="Equity:").grid(row=0, column=0, sticky="e", padx=5, pady=2)
 entry_equity = ttk.Entry(frame_portfolio)
@@ -418,20 +435,29 @@ ttk.Label(frame_pyr2, text="Assumed Shares:").grid(row=7, column=0, sticky="e", 
 label_pyr2_shares = ttk.Label(frame_pyr2, text="N/A")
 label_pyr2_shares.grid(row=7, column=1, sticky="w", padx=5, pady=2)
 
+# Log Frame
+frame_log = ttk.LabelFrame(root, text="Status", style="Custom.TLabelframe")
+frame_log.grid(row=0, column=1, padx=1, pady=10, sticky="nsew", columnspan=1)
+
+log_text = tk.Text(frame_log, wrap='word', height=10, bg='#2b2b2b', fg='white', font=('Aptos', 10), width = 1)
+log_text.grid(row=0, column=0, padx=5, pady=5, sticky="nsew", columnspan=1)
+frame_log.grid_rowconfigure(0, weight=1)
+frame_log.grid_columnconfigure(0, weight=1)
+
 # Calculate Button
 button_calculate = ttk.Button(root, text="Calculate", command=calculate)
-button_calculate.grid(row=2, column=0, columnspan=3, padx=10, pady=10)
+button_calculate.grid(row=2, column=0, padx=10, pady=10, sticky="ns")
 
 # Execute Order Button
 button_execute = ttk.Button(root, text="Execute Order", command=execute_order)
-button_execute.grid(row=2, column=1, columnspan=3, padx=10, pady=10)
+button_execute.grid(row=2, column=1, padx=10, pady=10, sticky="ns")
 
 # Save Defaults Button
 button_save_defaults = ttk.Button(root, text="Save Defaults", command=save_defaults)
-button_save_defaults.grid(row=2, column=2, columnspan=3, padx=10, pady=10)
+button_save_defaults.grid(row=2, column=2, padx=10, pady=10, sticky="ns")
 
 # Start the API connection
-app = IBapi(entry_equity)
+app = IBapi(entry_equity, log_text)
 app.connect(host, port, clientId)
 
 time.sleep(1)  # Sleep interval to allow time for connection to server
