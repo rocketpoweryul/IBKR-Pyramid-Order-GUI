@@ -106,9 +106,9 @@ def execute_order():
         if not ticker:
             raise ValueError("Ticker cannot be empty")
 
-        core_shares = int(label_core_shares['text']) if label_core_shares['text'] != 'N/A' else 0
-        pyr1_shares = int(label_pyr1_shares['text']) if label_pyr1_shares['text'] != 'N/A' else 0
-        pyr2_shares = int(label_pyr2_shares['text']) if label_pyr2_shares['text'] != 'N/A' else 0
+        core_shares = int(float(label_core_shares['text'])) if label_core_shares['text'] != 'N/A' else 0
+        pyr1_shares = int(float(label_pyr1_shares['text'])) if label_pyr1_shares['text'] != 'N/A' else 0
+        pyr2_shares = int(float(label_pyr2_shares['text'])) if label_pyr2_shares['text'] != 'N/A' else 0
 
         contract = Contract()
         contract.symbol = ticker
