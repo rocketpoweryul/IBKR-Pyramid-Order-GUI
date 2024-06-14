@@ -2,7 +2,7 @@
 
 This is just a simple GUI I created to help me with my pyramid orders for my stock trading.
 
-![image](https://github.com/rocketpoweryul/IBKR-Pyramid-Order-GUI/assets/5898307/871dd9e7-e3ec-4c25-aa47-9e1a4bf55298)
+![image](https://github.com/rocketpoweryul/IBKR-Pyramid-Order-GUI/assets/5898307/190c0808-19da-4b7b-b22d-cbe39f7bf32c)
 
 Enter in your portfolio-level inputs along with the ticker.
 
