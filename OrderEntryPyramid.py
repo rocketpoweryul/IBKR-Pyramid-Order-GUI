@@ -271,6 +271,11 @@ style.configure("TButton", background='#3c3c3c', foreground='#FF9E1B', font=('Ap
 style.configure("TEntry", background='#3c3c3c', foreground='#386227', font=('Aptos', 12))
 style.configure("TCombobox", background='#3c3c3c', foreground='#386227', font=('Aptos', 12))
 
+# Create a label to display the image
+logo_label = ttk.Label(root, image=logo_photo, background='#2b2b2b')
+logo_label.image = logo_photo  # Keep a reference to avoid garbage collection
+logo_label.grid(row=0, column=2, padx=10, pady=10, sticky="ne", rowspan=2)
+
 # Portfolio Frame
 frame_portfolio = ttk.LabelFrame(root, text="Portfolio", style="Custom.TLabelframe")
 frame_portfolio.grid(row=0, column=0, padx=10, pady=10, sticky="ew", columnspan=1)
