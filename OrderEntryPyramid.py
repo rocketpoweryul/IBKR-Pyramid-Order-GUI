@@ -45,8 +45,9 @@ class IBapi(EWrapper, EClient):
 
         parent.orderId = parentOrderId
         parent.action = action
-        parent.orderType = "STP"
+        parent.orderType = "STP LMT"
         parent.auxPrice = stopPrice
+        parent.lmtPrice = float(round(stopPrice * 1.01, 2))
         parent.totalQuantity = size
         parent.tif = "GTC"
         parent.transmit = False
