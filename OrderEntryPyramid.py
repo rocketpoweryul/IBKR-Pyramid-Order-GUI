@@ -51,7 +51,7 @@ class IBapi(EWrapper, EClient):
         parent.action = action
         parent.orderType = "STP LMT"
         parent.auxPrice = stopPrice
-        parent.lmtPrice = float(round(stopPrice * 1.01, 2))
+        parent.lmtPrice = float(round(stopPrice * (1+get_buy_limit_threshold()), 2))
         parent.totalQuantity = size
         parent.tif = "GTC"
         parent.transmit = False
@@ -227,6 +227,13 @@ def format_number(value):
     except ValueError:
         return value  # In case the value cannot be converted to float
 
+def get_buy_limit_threshold():
+    try:
+        return float(entry_buy_limit_thresh.get()) / 100
+    except ValueError:
+        return 0.01  # Default value if the entry is empty or invalid
+
+
 # Function to save the defaults
 def save_defaults():
     config['DEFAULTS'] = {
@@ -309,7 +316,7 @@ ttk.Label(frame_portfolio, text="Full Position Size %:").grid(row=2, column=0, s
 entry_full_position_size = ttk.Entry(frame_portfolio)
 entry_full_position_size.grid(row=2, column=1, padx=5, pady=2)
 
-ttk.Label(frame_portfolio, text="Buy Limit Thresh %:").grid(row=3, column=0, sticky="e", padx=5, pady=2)
+ttk.Label(frame_portfolio, text="Buy Stop Limit %:").grid(row=3, column=0, sticky="e", padx=5, pady=2)
 entry_buy_limit_thresh = ttk.Entry(frame_portfolio)
 entry_buy_limit_thresh.grid(row=3, column=1, padx=5, pady=2)
 
