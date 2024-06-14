@@ -1,6 +1,7 @@
 import configparser
 import tkinter as tk
 from tkinter import ttk
+from tkinter import font
 from math import ceil
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
@@ -195,22 +196,22 @@ def update_labels(core_stop_percentage, core_value_at_risk, core_r_equity, core_
                   pyr1_stop_percentage, pyr1_value_at_risk, pyr1_r_equity, pyr1_sell_limit_profit, pyr1_shares,
                   pyr2_stop_percentage, pyr2_value_at_risk, pyr2_r_equity, pyr2_sell_limit_profit, pyr2_shares):
     label_core_stop_percentage['text'] = f"{core_stop_percentage:.2f}%" if core_stop_percentage else "N/A"
-    label_core_value_at_risk['text'] = f"${format_number(core_value_at_risk)}"
-    label_core_r_equity['text'] = f"${format_number(core_r_equity)}"
-    label_core_sell_limit_profit['text'] = f"${format_number(core_sell_limit_profit)}" if core_sell_limit_profit else "N/A"
-    label_core_shares['text'] = f"{format_number(core_shares)}" if core_shares else "N/A"
+    label_core_value_at_risk['text'] = f"${core_value_at_risk:.2f}"
+    label_core_r_equity['text'] = f"${core_r_equity:.2f}"
+    label_core_sell_limit_profit['text'] = f"${core_sell_limit_profit:.2f}" if core_sell_limit_profit else "N/A"
+    label_core_shares['text'] = f"{core_shares}" if core_shares else "N/A"
 
     label_pyr1_stop_percentage['text'] = f"{pyr1_stop_percentage:.2f}%" if pyr1_stop_percentage else "N/A"
-    label_pyr1_value_at_risk['text'] = f"${format_number(pyr1_value_at_risk)}"
-    label_pyr1_r_equity['text'] = f"${format_number(pyr1_r_equity)}"
-    label_pyr1_sell_limit_profit['text'] = f"${format_number(pyr1_sell_limit_profit)}" if pyr1_sell_limit_profit else "N/A"
-    label_pyr1_shares['text'] = f"{format_number(pyr1_shares)}" if pyr1_shares else "N/A"
+    label_pyr1_value_at_risk['text'] = f"${pyr1_value_at_risk:.2f}"
+    label_pyr1_r_equity['text'] = f"${pyr1_r_equity:.2f}"
+    label_pyr1_sell_limit_profit['text'] = f"${pyr1_sell_limit_profit:.2f}" if pyr1_sell_limit_profit else "N/A"
+    label_pyr1_shares['text'] = f"{pyr1_shares}" if pyr1_shares else "N/A"
 
     label_pyr2_stop_percentage['text'] = f"{pyr2_stop_percentage:.2f}%" if pyr2_stop_percentage else "N/A"
-    label_pyr2_value_at_risk['text'] = f"${format_number(pyr2_value_at_risk)}"
-    label_pyr2_r_equity['text'] = f"${format_number(pyr2_r_equity)}"
-    label_pyr2_sell_limit_profit['text'] = f"${format_number(pyr2_sell_limit_profit)}" if pyr2_sell_limit_profit else "N/A"
-    label_pyr2_shares['text'] = f"{format_number(pyr2_shares)}" if pyr2_shares else "N/A"
+    label_pyr2_value_at_risk['text'] = f"${pyr2_value_at_risk:.2f}"
+    label_pyr2_r_equity['text'] = f"${pyr2_r_equity:.2f}"
+    label_pyr2_sell_limit_profit['text'] = f"${pyr2_sell_limit_profit:.2f}" if pyr2_sell_limit_profit else "N/A"
+    label_pyr2_shares['text'] = f"{pyr2_shares}" if pyr2_shares else "N/A"
 
 # Format number with thousands separator
 def format_number(value):
@@ -233,14 +234,23 @@ def save_defaults():
 # Load the configuration file and set defaults
 def load_defaults():
     if 'DEFAULTS' in config:
-        entry_risk_per_full_pos.insert(0, config['DEFAULTS'].get('Risk per Full Pos %', ''))
-        entry_full_position_size.insert(0, config['DEFAULTS'].get('Full Position Size %', ''))
-        entry_buy_limit_thresh.insert(0, config['DEFAULTS'].get('Buy Limit Thresh %', ''))
-        entry_r_target.insert(0, config['DEFAULTS'].get('R Target', ''))
+        entry_risk_per_full_pos.insert(0, config['DEFAULTS'].get('risk per full pos %', ''))
+        entry_full_position_size.insert(0, config['DEFAULTS'].get('full position size %', ''))
+        entry_buy_limit_thresh.insert(0, config['DEFAULTS'].get('buy limit thresh %', ''))
+        entry_r_target.insert(0, config['DEFAULTS'].get('r target', ''))
 
 # Create the main window
 root = tk.Tk()
 root.title("IBKR Pyramid Bracket Order Tool (IPBot)")
+root.configure(bg='#2b2b2b')  # Dark background
+
+# Set the icon for the taskbar
+root.iconbitmap("logo.ico")
+
+# Load the logo image and set it as the icon for the title bar
+logo_image = Image.open("logo.png")  # Replace with the actual path to your logo image
+logo_photo = ImageTk.PhotoImage(logo_image)
+root.iconphoto(True, logo_photo)
 
 def on_closing():
     app.disconnect_IBAPI()
@@ -248,156 +258,160 @@ def on_closing():
 
 root.protocol("WM_DELETE_WINDOW", on_closing)
 
-# Load the logo image
-logo_image = Image.open("logo.png")  # Replace with the actual path to your logo image
-logo_photo = ImageTk.PhotoImage(logo_image)
+style = ttk.Style()
+style.theme_use('default')
 
-# Create a label to display the image
-logo_label = ttk.Label(root, image=logo_photo)
-logo_label.image = logo_photo  # Keep a reference to avoid garbage collection
-logo_label.grid(row=0, column=2, padx=10, pady=10, sticky="ne", rowspan=2)
+# Define custom style for frames
+style.configure("Custom.TLabelframe", background='#346326', foreground='#FF9E1B', font=('Aptos', 14, 'bold'))
+style.configure("Custom.TLabelframe.Label", background='#346326', foreground='#FF9E1B', font=('Aptos', 14, 'bold'))
+
+# Set the theme for the labels and entries
+style.configure("TLabel", background='#346326', foreground='white', font=('Aptos', 12))
+style.configure("TButton", background='#3c3c3c', foreground='#FF9E1B', font=('Aptos', 12, 'bold'))
+style.configure("TEntry", background='#3c3c3c', foreground='#386227', font=('Aptos', 12))
+style.configure("TCombobox", background='#3c3c3c', foreground='#386227', font=('Aptos', 12))
 
 # Portfolio Frame
-frame_portfolio = ttk.LabelFrame(root, text="Portfolio")
+frame_portfolio = ttk.LabelFrame(root, text="Portfolio", style="Custom.TLabelframe")
 frame_portfolio.grid(row=0, column=0, padx=10, pady=10, sticky="ew", columnspan=1)
 
-ttk.Label(frame_portfolio, text="Equity:").grid(row=0, column=0, sticky="e")
+ttk.Label(frame_portfolio, text="Equity:").grid(row=0, column=0, sticky="e", padx=5, pady=2)
 entry_equity = ttk.Entry(frame_portfolio)
-entry_equity.grid(row=0, column=1)
+entry_equity.grid(row=0, column=1, padx=5, pady=2)
 
-ttk.Label(frame_portfolio, text="Risk per Full Pos %:").grid(row=1, column=0, sticky="e")
+ttk.Label(frame_portfolio, text="Risk per Full Pos %:").grid(row=1, column=0, sticky="e", padx=5, pady=2)
 entry_risk_per_full_pos = ttk.Entry(frame_portfolio)
-entry_risk_per_full_pos.grid(row=1, column=1)
+entry_risk_per_full_pos.grid(row=1, column=1, padx=5, pady=2)
 
-ttk.Label(frame_portfolio, text="Full Position Size %:").grid(row=2, column=0, sticky="e")
+ttk.Label(frame_portfolio, text="Full Position Size %:").grid(row=2, column=0, sticky="e", padx=5, pady=2)
 entry_full_position_size = ttk.Entry(frame_portfolio)
-entry_full_position_size.grid(row=2, column=1)
+entry_full_position_size.grid(row=2, column=1, padx=5, pady=2)
 
-ttk.Label(frame_portfolio, text="Buy Limit Thresh %:").grid(row=3, column=0, sticky="e")
+ttk.Label(frame_portfolio, text="Buy Limit Thresh %:").grid(row=3, column=0, sticky="e", padx=5, pady=2)
 entry_buy_limit_thresh = ttk.Entry(frame_portfolio)
-entry_buy_limit_thresh.grid(row=3, column=1)
+entry_buy_limit_thresh.grid(row=3, column=1, padx=5, pady=2)
 
-ttk.Label(frame_portfolio, text="R Target:").grid(row=4, column=0, sticky="e")
+ttk.Label(frame_portfolio, text="R Target:").grid(row=4, column=0, sticky="e", padx=5, pady=2)
 entry_r_target = ttk.Entry(frame_portfolio)
-entry_r_target.grid(row=4, column=1)
+entry_r_target.grid(row=4, column=1, padx=5, pady=2)
 
-ttk.Label(frame_portfolio, text="Ticker:").grid(row=5, column=0, sticky="e")
+ttk.Label(frame_portfolio, text="Ticker:").grid(row=5, column=0, sticky="e", padx=5, pady=2)
 entry_ticker = ttk.Entry(frame_portfolio)
-entry_ticker.grid(row=5, column=1)
+entry_ticker.grid(row=5, column=1, padx=5, pady=2)
 
 # Load default values from configuration file
 load_defaults()
 
 # Core Position Frame
-frame_core_position = ttk.LabelFrame(root, text="Core Position")
-frame_core_position.grid(row=1, column=0, padx=10, pady=10, sticky="n")
+frame_core_position = ttk.LabelFrame(root, text="Core Position", style="Custom.TLabelframe")
+frame_core_position.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
 
-ttk.Label(frame_core_position, text="Buy Stop $:").grid(row=0, column=0, sticky="e")
+ttk.Label(frame_core_position, text="Buy Stop $:").grid(row=0, column=0, sticky="e", padx=5, pady=2)
 entry_core_buy_stop = ttk.Entry(frame_core_position)
-entry_core_buy_stop.grid(row=0, column=1)
+entry_core_buy_stop.grid(row=0, column=1, padx=5, pady=2)
 
-ttk.Label(frame_core_position, text="Stop Loss $:").grid(row=1, column=0, sticky="e")
+ttk.Label(frame_core_position, text="Stop Loss $:").grid(row=1, column=0, sticky="e", padx=5, pady=2)
 entry_core_stop_loss = ttk.Entry(frame_core_position)
-entry_core_stop_loss.grid(row=1, column=1)
+entry_core_stop_loss.grid(row=1, column=1, padx=5, pady=2)
 
-ttk.Label(frame_core_position, text="Pos Size %:").grid(row=2, column=0, sticky="e")
+ttk.Label(frame_core_position, text="Pos Size %:").grid(row=2, column=0, sticky="e", padx=5, pady=2)
 combobox_core_pos_size = ttk.Combobox(frame_core_position, values=["Full", "Half", "Quarter", "None"], state="readonly")
-combobox_core_pos_size.grid(row=2, column=1)
+combobox_core_pos_size.grid(row=2, column=1, padx=5, pady=2)
 combobox_core_pos_size.current(1)  # Set default to "Half"
 
-ttk.Label(frame_core_position, text="Stop %:").grid(row=3, column=0, sticky="e")
+ttk.Label(frame_core_position, text="Stop %:").grid(row=3, column=0, sticky="e", padx=5, pady=2)
 label_core_stop_percentage = ttk.Label(frame_core_position, text="0.00%")
-label_core_stop_percentage.grid(row=3, column=1, sticky="w")
+label_core_stop_percentage.grid(row=3, column=1, sticky="w", padx=5, pady=2)
 
-ttk.Label(frame_core_position, text="Value at Risk:").grid(row=4, column=0, sticky="e")
+ttk.Label(frame_core_position, text="Value at Risk:").grid(row=4, column=0, sticky="e", padx=5, pady=2)
 label_core_value_at_risk = ttk.Label(frame_core_position, text="$0.00")
-label_core_value_at_risk.grid(row=4, column=1, sticky="w")
+label_core_value_at_risk.grid(row=4, column=1, sticky="w", padx=5, pady=2)
 
-ttk.Label(frame_core_position, text="R $ Equity:").grid(row=5, column=0, sticky="e")
+ttk.Label(frame_core_position, text="R $ Equity:").grid(row=5, column=0, sticky="e", padx=5, pady=2)
 label_core_r_equity = ttk.Label(frame_core_position, text="$0.00")
-label_core_r_equity.grid(row=5, column=1, sticky="w")
+label_core_r_equity.grid(row=5, column=1, sticky="w", padx=5, pady=2)
 
-ttk.Label(frame_core_position, text="Sell Limit Profit $:").grid(row=6, column=0, sticky="e")
+ttk.Label(frame_core_position, text="Sell Limit Profit $:").grid(row=6, column=0, sticky="e", padx=5, pady=2)
 label_core_sell_limit_profit = ttk.Label(frame_core_position, text="$0.00")
-label_core_sell_limit_profit.grid(row=6, column=1, sticky="w")
+label_core_sell_limit_profit.grid(row=6, column=1, sticky="w", padx=5, pady=2)
 
-ttk.Label(frame_core_position, text="Assumed Shares:").grid(row=7, column=0, sticky="e")
+ttk.Label(frame_core_position, text="Assumed Shares:").grid(row=7, column=0, sticky="e", padx=5, pady=2)
 label_core_shares = ttk.Label(frame_core_position, text="N/A")
-label_core_shares.grid(row=7, column=1, sticky="w")
+label_core_shares.grid(row=7, column=1, sticky="w", padx=5, pady=2)
 
 # Pyramid 1 Frame
-frame_pyr1 = ttk.LabelFrame(root, text="Pyramid 1")
-frame_pyr1.grid(row=1, column=1, padx=10, pady=10, sticky="n")
+frame_pyr1 = ttk.LabelFrame(root, text="Pyramid 1", style="Custom.TLabelframe")
+frame_pyr1.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
 
-ttk.Label(frame_pyr1, text="Buy Stop $:").grid(row=0, column=0, sticky="e")
+ttk.Label(frame_pyr1, text="Buy Stop $:").grid(row=0, column=0, sticky="e", padx=5, pady=2)
 entry_pyr1_buy_stop = ttk.Entry(frame_pyr1)
-entry_pyr1_buy_stop.grid(row=0, column=1)
+entry_pyr1_buy_stop.grid(row=0, column=1, padx=5, pady=2)
 
-ttk.Label(frame_pyr1, text="Stop Loss $:").grid(row=1, column=0, sticky="e")
+ttk.Label(frame_pyr1, text="Stop Loss $:").grid(row=1, column=0, sticky="e", padx=5, pady=2)
 entry_pyr1_stop_loss = ttk.Entry(frame_pyr1)
-entry_pyr1_stop_loss.grid(row=1, column=1)
+entry_pyr1_stop_loss.grid(row=1, column=1, padx=5, pady=2)
 
-ttk.Label(frame_pyr1, text="Pos Size %:").grid(row=2, column=0, sticky="e")
+ttk.Label(frame_pyr1, text="Pos Size %:").grid(row=2, column=0, sticky="e", padx=5, pady=2)
 combobox_pyr1_pos_size = ttk.Combobox(frame_pyr1, values=["Full", "Half", "Quarter", "None"], state="readonly")
-combobox_pyr1_pos_size.grid(row=2, column=1)
-combobox_pyr1_pos_size.current(3)  # Set default to "None"
+combobox_pyr1_pos_size.grid(row=2, column=1, padx=5, pady=2)
+combobox_pyr1_pos_size.current(1)  # Set default to "Half"
 
-ttk.Label(frame_pyr1, text="Stop %:").grid(row=3, column=0, sticky="e")
+ttk.Label(frame_pyr1, text="Stop %:").grid(row=3, column=0, sticky="e", padx=5, pady=2)
 label_pyr1_stop_percentage = ttk.Label(frame_pyr1, text="0.00%")
-label_pyr1_stop_percentage.grid(row=3, column=1, sticky="w")
+label_pyr1_stop_percentage.grid(row=3, column=1, sticky="w", padx=5, pady=2)
 
-ttk.Label(frame_pyr1, text="Value at Risk:").grid(row=4, column=0, sticky="e")
+ttk.Label(frame_pyr1, text="Value at Risk:").grid(row=4, column=0, sticky="e", padx=5, pady=2)
 label_pyr1_value_at_risk = ttk.Label(frame_pyr1, text="$0.00")
-label_pyr1_value_at_risk.grid(row=4, column=1, sticky="w")
+label_pyr1_value_at_risk.grid(row=4, column=1, sticky="w", padx=5, pady=2)
 
-ttk.Label(frame_pyr1, text="R $ Equity:").grid(row=5, column=0, sticky="e")
+ttk.Label(frame_pyr1, text="R $ Equity:").grid(row=5, column=0, sticky="e", padx=5, pady=2)
 label_pyr1_r_equity = ttk.Label(frame_pyr1, text="$0.00")
-label_pyr1_r_equity.grid(row=5, column=1, sticky="w")
+label_pyr1_r_equity.grid(row=5, column=1, sticky="w", padx=5, pady=2)
 
-ttk.Label(frame_pyr1, text="Sell Limit Profit $:").grid(row=6, column=0, sticky="e")
+ttk.Label(frame_pyr1, text="Sell Limit Profit $:").grid(row=6, column=0, sticky="e", padx=5, pady=2)
 label_pyr1_sell_limit_profit = ttk.Label(frame_pyr1, text="$0.00")
-label_pyr1_sell_limit_profit.grid(row=6, column=1, sticky="w")
+label_pyr1_sell_limit_profit.grid(row=6, column=1, sticky="w", padx=5, pady=2)
 
-ttk.Label(frame_pyr1, text="Assumed Shares:").grid(row=7, column=0, sticky="e")
+ttk.Label(frame_pyr1, text="Assumed Shares:").grid(row=7, column=0, sticky="e", padx=5, pady=2)
 label_pyr1_shares = ttk.Label(frame_pyr1, text="N/A")
-label_pyr1_shares.grid(row=7, column=1, sticky="w")
+label_pyr1_shares.grid(row=7, column=1, sticky="w", padx=5, pady=2)
 
 # Pyramid 2 Frame
-frame_pyr2 = ttk.LabelFrame(root, text="Pyramid 2")
-frame_pyr2.grid(row=1, column=2, padx=10, pady=10, sticky="n")
+frame_pyr2 = ttk.LabelFrame(root, text="Pyramid 2", style="Custom.TLabelframe")
+frame_pyr2.grid(row=1, column=2, padx=10, pady=10, sticky="nsew")
 
-ttk.Label(frame_pyr2, text="Buy Stop $:").grid(row=0, column=0, sticky="e")
+ttk.Label(frame_pyr2, text="Buy Stop $:").grid(row=0, column=0, sticky="e", padx=5, pady=2)
 entry_pyr2_buy_stop = ttk.Entry(frame_pyr2)
-entry_pyr2_buy_stop.grid(row=0, column=1)
+entry_pyr2_buy_stop.grid(row=0, column=1, padx=5, pady=2)
 
-ttk.Label(frame_pyr2, text="Stop Loss $:").grid(row=1, column=0, sticky="e")
+ttk.Label(frame_pyr2, text="Stop Loss $:").grid(row=1, column=0, sticky="e", padx=5, pady=2)
 entry_pyr2_stop_loss = ttk.Entry(frame_pyr2)
-entry_pyr2_stop_loss.grid(row=1, column=1)
+entry_pyr2_stop_loss.grid(row=1, column=1, padx=5, pady=2)
 
-ttk.Label(frame_pyr2, text="Pos Size %:").grid(row=2, column=0, sticky="e")
+ttk.Label(frame_pyr2, text="Pos Size %:").grid(row=2, column=0, sticky="e", padx=5, pady=2)
 combobox_pyr2_pos_size = ttk.Combobox(frame_pyr2, values=["Full", "Half", "Quarter", "None"], state="readonly")
-combobox_pyr2_pos_size.grid(row=2, column=1)
+combobox_pyr2_pos_size.grid(row=2, column=1, padx=5, pady=2)
 combobox_pyr2_pos_size.current(3)  # Set default to "None"
 
-ttk.Label(frame_pyr2, text="Stop %:").grid(row=3, column=0, sticky="e")
+ttk.Label(frame_pyr2, text="Stop %:").grid(row=3, column=0, sticky="e", padx=5, pady=2)
 label_pyr2_stop_percentage = ttk.Label(frame_pyr2, text="0.00%")
-label_pyr2_stop_percentage.grid(row=3, column=1, sticky="w")
+label_pyr2_stop_percentage.grid(row=3, column=1, sticky="w", padx=5, pady=2)
 
-ttk.Label(frame_pyr2, text="Value at Risk:").grid(row=4, column=0, sticky="e")
+ttk.Label(frame_pyr2, text="Value at Risk:").grid(row=4, column=0, sticky="e", padx=5, pady=2)
 label_pyr2_value_at_risk = ttk.Label(frame_pyr2, text="$0.00")
-label_pyr2_value_at_risk.grid(row=4, column=1, sticky="w")
+label_pyr2_value_at_risk.grid(row=4, column=1, sticky="w", padx=5, pady=2)
 
-ttk.Label(frame_pyr2, text="R $ Equity:").grid(row=5, column=0, sticky="e")
+ttk.Label(frame_pyr2, text="R $ Equity:").grid(row=5, column=0, sticky="e", padx=5, pady=2)
 label_pyr2_r_equity = ttk.Label(frame_pyr2, text="$0.00")
-label_pyr2_r_equity.grid(row=5, column=1, sticky="w")
+label_pyr2_r_equity.grid(row=5, column=1, sticky="w", padx=5, pady=2)
 
-ttk.Label(frame_pyr2, text="Sell Limit Profit $:").grid(row=6, column=0, sticky="e")
+ttk.Label(frame_pyr2, text="Sell Limit Profit $:").grid(row=6, column=0, sticky="e", padx=5, pady=2)
 label_pyr2_sell_limit_profit = ttk.Label(frame_pyr2, text="$0.00")
-label_pyr2_sell_limit_profit.grid(row=6, column=1, sticky="w")
+label_pyr2_sell_limit_profit.grid(row=6, column=1, sticky="w", padx=5, pady=2)
 
-ttk.Label(frame_pyr2, text="Assumed Shares:").grid(row=7, column=0, sticky="e")
+ttk.Label(frame_pyr2, text="Assumed Shares:").grid(row=7, column=0, sticky="e", padx=5, pady=2)
 label_pyr2_shares = ttk.Label(frame_pyr2, text="N/A")
-label_pyr2_shares.grid(row=7, column=1, sticky="w")
+label_pyr2_shares.grid(row=7, column=1, sticky="w", padx=5, pady=2)
 
 # Calculate Button
 button_calculate = ttk.Button(root, text="Calculate", command=calculate)
