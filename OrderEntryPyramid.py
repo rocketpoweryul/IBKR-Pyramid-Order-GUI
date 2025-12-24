@@ -206,19 +206,19 @@ def update_labels(core_stop_percentage, core_value_at_risk, core_r_equity, core_
     label_core_value_at_risk['text'] = f"${core_value_at_risk:.2f}"
     label_core_r_equity['text'] = f"${core_r_equity:.2f}"
     label_core_sell_limit_profit['text'] = f"${core_sell_limit_profit:.2f}" if core_sell_limit_profit else "N/A"
-    label_core_shares['text'] = f"{core_shares}" if core_shares else "N/A"
+    label_core_shares['text'] = f"{core_shares:.0f}" if core_shares else "N/A"
 
     label_pyr1_stop_percentage['text'] = f"{pyr1_stop_percentage:.2f}%" if pyr1_stop_percentage else "N/A"
     label_pyr1_value_at_risk['text'] = f"${pyr1_value_at_risk:.2f}"
     label_pyr1_r_equity['text'] = f"${pyr1_r_equity:.2f}"
     label_pyr1_sell_limit_profit['text'] = f"${pyr1_sell_limit_profit:.2f}" if pyr1_sell_limit_profit else "N/A"
-    label_pyr1_shares['text'] = f"{pyr1_shares}" if pyr1_shares else "N/A"
+    label_pyr1_shares['text'] = f"{pyr1_shares:.0f}" if pyr1_shares else "N/A"
 
     label_pyr2_stop_percentage['text'] = f"{pyr2_stop_percentage:.2f}%" if pyr2_stop_percentage else "N/A"
     label_pyr2_value_at_risk['text'] = f"${pyr2_value_at_risk:.2f}"
     label_pyr2_r_equity['text'] = f"${pyr2_r_equity:.2f}"
     label_pyr2_sell_limit_profit['text'] = f"${pyr2_sell_limit_profit:.2f}" if pyr2_sell_limit_profit else "N/A"
-    label_pyr2_shares['text'] = f"{pyr2_shares}" if pyr2_shares else "N/A"
+    label_pyr2_shares['text'] = f"{pyr2_shares:.0f}" if pyr2_shares else "N/A"
 
 # Format number with thousands separator
 def format_number(value):
